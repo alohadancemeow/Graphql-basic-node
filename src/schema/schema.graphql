@@ -1,0 +1,11 @@
+type Query {
+  me: User!
+  user(id: ID!): User
+  users: [User]!
+}
+
+# A user has id, name
+type User {
+  id: ID!
+  name: String!
+}
