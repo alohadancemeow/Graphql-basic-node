@@ -1,33 +1,20 @@
-// fake database
-const users = [
-    {
-        id: '1',
-        name: '9A'
-    },
-    {
-        id: '2',
-        name: '9B'
-    },
-    {
-        id: '3',
-        name: '9C'
-    }
-]
+import User from "../models/user"
 
-const me = users[0]
+const Query = {
+  // me: (parent, args, context, info) => me,
+  user: (parent, args, context, info) => User.findById(args.id),
+  users: (parent, args, context, info) => User.find({})
+}
 
-// # Resolvers
-export const resolvers = {
-    Query: {
-        me: (parent, args, context, info) => me,
-        user: (parent, args, context, info) => {
-            const id = args.id
-            const user = users.find(user => user.id === id)
+const Mutation = {
+  signup: (parent, args, context, info) => {
+    return User.create(args)
+  }
+}
 
-            return user
-        },
-        users: (parent, args, context, info) => users
-    }
+const resolvers = {
+  Query,
+  Mutation
 }
 
 export default resolvers

@@ -1,11 +1,21 @@
+# Schema for Graphql server
+
+# Query (read)
 type Query {
   me: User!
   user(id: ID!): User
   users: [User]!
 }
 
-# A user has id, name
+# Mutation (create, delete, update)
+type Mutation {
+  signup(name: String!, email: String!, password: String!): User
+}
+
+# A user has id, name (model)
 type User {
   id: ID!
   name: String!
+  email: String!
+  password: String!
 }
