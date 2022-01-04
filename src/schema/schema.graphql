@@ -5,17 +5,29 @@ type Query {
   me: User!
   user(id: ID!): User
   users: [User]!
+  product(id: ID!): Product
+  products: [Product]!
 }
 
 # Mutation (create, delete, update)
 type Mutation {
   signup(name: String!, email: String!, password: String!): User
+  createProduct(desc: String!, price: Float!, imageUrl: String!): Product!
 }
 
-# A user has id, name (model)
+# A user has id, name, email, password (model)
 type User {
   id: ID!
   name: String!
   email: String!
   password: String!
+}
+
+# A prodcut has id, desc, price, image, user (product model)
+type Product {
+  id: ID!
+  desc: String!
+  price: Float!
+  imageUrl: String!
+  user: User!
 }
