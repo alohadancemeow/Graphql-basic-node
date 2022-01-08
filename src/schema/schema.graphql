@@ -13,7 +13,10 @@ type Query {
 type Mutation {
   signup(name: String!, email: String!, password: String!): User
   createProduct(desc: String!, price: Float!, imageUrl: String!): Product!
+  addToCart(id: ID!): CartItem!
 }
+
+scalar Date
 
 # A user has id, name, email, password (model)
 type User {
@@ -21,6 +24,9 @@ type User {
   name: String!
   email: String!
   password: String!
+  products: [Product]
+  carts: [CartItem]!
+  createdAt: Date!
 }
 
 # A prodcut has id, desc, price, image, user (product model)
@@ -30,4 +36,13 @@ type Product {
   price: Float!
   imageUrl: String!
   user: User!
+  createdAt: Date!
+}
+
+type CartItem {
+  id: ID!
+  product: Product!
+  quantity: Int!
+  user: User!
+  createdAt: Date!
 }
