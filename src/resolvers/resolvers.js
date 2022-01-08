@@ -3,16 +3,27 @@ import Product from '../models/product'
 
 import bcrypt from 'bcryptjs'
 
+// # Need to be async, because it's promise.
 const Query = {
   // me: (parent, args, context, info) => me,
   user: async (parent, args, context, info) => await User.findById(args.id),
   users: async (parent, args, context, info) => await User.find({}),
-  product: (parent, args, context, info) => {
-    Product.findById(args.id)
+  product: async (parent, args, context, info) => {
+    const oneProduct = await Product.findById(args.id)
       .populate({
         path: 'user',
         populate: { path: 'products' }
       })
+    // console.log(oneProduct);
+    return oneProduct
+  },
+  products: async (parent, args, context, info) => {
+    const allProducts = await Product.find().populate({
+      path: "user",
+      populate: { path: "products" }
+    })
+    // console.log(allProducts);
+    return allProducts
   }
 }
 
