@@ -2,7 +2,7 @@
 
 # Query (read)
 type Query {
-  me: User!
+  login(email: String!, password: String!): AuthData!
   user(id: ID!): User
   users: [User]!
   product(id: ID!): Product
@@ -20,7 +20,7 @@ type Mutation {
 
 scalar Date
 
-# A user has id, name, email, password (model)
+# A user has id, name, email, password, products, carts, createdAt (user model)
 type User {
   id: ID!
   name: String!
@@ -31,7 +31,7 @@ type User {
   createdAt: Date!
 }
 
-# A prodcut has id, desc, price, image, user (product model)
+# A prodcut has id, desc, price, image, user(creator)
 type Product {
   id: ID!
   desc: String!
@@ -41,10 +41,17 @@ type Product {
   createdAt: Date!
 }
 
+# A cartitem has id(product id), product, quantity, user(who logged in), createdAt
 type CartItem {
   id: ID!
   product: Product!
   quantity: Int!
   user: User!
   createdAt: Date!
+}
+
+# An AuthData has id(user who logged in), token
+type AuthData {
+  userId: ID
+  jwt: String
 }

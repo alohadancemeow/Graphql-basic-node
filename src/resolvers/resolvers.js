@@ -1,42 +1,75 @@
 import User from "../models/user"
 import Product from '../models/product'
+import CartItem from "../models/cartItem"
 
 import bcrypt from 'bcryptjs'
 import { GraphQLDateTime } from 'graphql-iso-date'
-import CartItem from "../models/cartItem"
+import jwt from 'jsonwebtoken'
 
 // # Need to be async, because it's promise.
 const Query = {
-  // me: (parent, args, context, info) => me,
-  user: async (parent, args, context, info) => {
+
+  // todo: login
+  login: async (parent, args, context, info) => {
+    const { email, password } = args
+
+    // find user in database
+    const user = await User.findOne({ email })
+
+    if (!user) throw new Error('Email not found, please sign up.')
+
+    // check if password is correct
+    const validPassword = await bcrypt.compare(password, user.password)
+
+    if (!validPassword) throw new Error('Invalid email or password.')
+
+    // create token
+    const token = jwt.sign({ userId: user.id }, process.env.SECRET, { expiresIn: "7days" })
+
+    return { userId: user.id, jwt: token }
+
+  },
+
+  // todo: user
+  user: async (parent, args, { userId }, info) => {
+
+    // check if user logged in
+    if (!userId) throw new Error('Please log in.')
+
+    // compare userId from token with userId from args
+    if (userId !== args.id) throw new Error('Not authorized.')
+
+
     const oneUser = await User.findById(args.id)
       .populate({ path: 'products', populate: { path: 'user' } })
       .populate({ path: "carts", populate: { path: "product" } })
-    // console.log(oneUser);
     return oneUser
   },
+
+  // todo: users
   users: async (parent, args, context, info) => {
     const allUsers = await User.find({})
       .populate({ path: 'products', populate: { path: 'user' } })
       .populate({ path: "carts", populate: { path: "product" } })
-    // console.log(allUsers)
     return allUsers
   },
+
+  // todo: product
   product: async (parent, args, context, info) => {
     const oneProduct = await Product.findById(args.id)
       .populate({
         path: 'user',
         populate: { path: 'products' }
       })
-    // console.log(oneProduct);
     return oneProduct
   },
+
+  // todo: products
   products: async (parent, args, context, info) => {
     const allProducts = await Product.find().populate({
       path: "user",
       populate: { path: "products" }
     })
-    // console.log(allProducts);
     return allProducts
   }
 }
@@ -64,10 +97,10 @@ const Mutation = {
   },
 
   // todo: create product
-  createProduct: async (parent, args, context, info) => {
+  createProduct: async (parent, args, { userId }, info) => {
 
-    // get userID
-    const userId = '61d95f8ae225c67e0cc8ff6a'
+    // check if user logged in
+    if (!userId) throw new Error('Please log in.')
 
     if (!args.desc || !args.price || !args.imageUrl) {
       throw new Error('Please privide all required fields.')
@@ -93,16 +126,14 @@ const Mutation = {
   },
 
   // todo: update product
-  updateProduct: async (parent, args, context, info) => {
+  updateProduct: async (parent, args, { userId }, info) => {
     const { id, desc, price, imageUrl } = args
 
-    //todo: Check if user logged in
+    // check if user logged in
+    if (!userId) throw new Error('Please log in.')
 
     // find product in datebase
     const product = await Product.findById(id)
-
-    // check if user is the owner of the product
-    const userId = "61d95f8ae225c67e0cc8ff6a"
 
     if (userId !== product.user.toString()) {
       throw new Error('You are not authorized.')
@@ -126,15 +157,17 @@ const Mutation = {
   },
 
   // todo: add to cart
-  addToCart: async (parent, args, context, info) => {
+  addToCart: async (parent, args, { userId }, info) => {
 
-    // id = productID
+    // get product id
     const { id } = args
+
+    // check if user logged in
+    if (!userId) throw new Error('Please log in.')
 
     try {
 
-      // Find user who add to cart --> from loged in
-      const userId = '61d95faafa3e25ed77d0ffce'
+      // Find user by userId
       const user = await User.findById(userId)
         .populate({
           path: "carts",
@@ -192,19 +225,21 @@ const Mutation = {
   },
 
   // todo: delete cart
-  deleteCart: async (parent, args, context, info) => {
+  deleteCart: async (parent, args, { userId }, info) => {
+
+    // get cart id
     const { id } = args
 
-    // find cart id
+    // check if user logged in
+    if (!userId) throw new Error('Please log in.')
+
+    // find cart by cart id
     const cart = await CartItem.findById(id)
 
-    // todo: check if user logged in
-    // find user
-    const userId = "61d95faafa3e25ed77d0ffce"
-
+    // find user by userId
     const user = await User.findById(userId)
 
-    // check owner ship of cart
+    // check ownership of cart
     if (cart.user.toString() !== userId) {
       throw new Error('Not authorized.')
     }
