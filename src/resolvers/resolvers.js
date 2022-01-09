@@ -189,6 +189,39 @@ const Mutation = {
     } catch (error) {
       console.log(error);
     }
+  },
+
+  // todo: delete cart
+  deleteCart: async (parent, args, context, info) => {
+    const { id } = args
+
+    // find cart id
+    const cart = await CartItem.findById(id)
+
+    // todo: check if user logged in
+    // find user
+    const userId = "61d95faafa3e25ed77d0ffce"
+
+    const user = await User.findById(userId)
+
+    // check owner ship of cart
+    if (cart.user.toString() !== userId) {
+      throw new Error('Not authorized.')
+    }
+
+    // delete cart
+    const deletedCart = await CartItem.findOneAndRemove(id)
+
+    // update user's carts
+    const updatedUserCarts = user.carts.filter(cartId => cartId.toString() !== deletedCart.id.toString())
+
+    // update user
+    await User.findByIdAndUpdate(userId, {
+      carts: updatedUserCarts
+    })
+
+    return deletedCart
+
   }
 }
 

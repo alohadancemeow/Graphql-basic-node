@@ -15,6 +15,7 @@ type Mutation {
   createProduct(desc: String!, price: Float!, imageUrl: String!): Product!
   updateProduct(id: ID!, desc: String, price: Float, imageUrl: String): Product!
   addToCart(id: ID!): CartItem!
+  deleteCart(id: ID!): CartItem!
 }
 
 scalar Date
