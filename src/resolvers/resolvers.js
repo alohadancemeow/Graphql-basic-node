@@ -43,7 +43,7 @@ const Query = {
 
 const Mutation = {
 
-  // sign up
+  // todo: sign up
   signup: async (parent, args, context, info) => {
 
     const email = args.email.trim().toLowerCase()
@@ -63,7 +63,7 @@ const Mutation = {
     return User.create({ ...args, email, password })
   },
 
-  // create product
+  // todo: create product
   createProduct: async (parent, args, context, info) => {
 
     // get userID
@@ -92,7 +92,40 @@ const Mutation = {
     })
   },
 
-  // add to cart
+  // todo: update product
+  updateProduct: async (parent, args, context, info) => {
+    const { id, desc, price, imageUrl } = args
+
+    //todo: Check if user logged in
+
+    // find product in datebase
+    const product = await Product.findById(id)
+
+    // check if user is the owner of the product
+    const userId = "61d95f8ae225c67e0cc8ff6a"
+
+    if (userId !== product.user.toString()) {
+      throw new Error('You are not authorized.')
+    }
+
+    // new product info
+    const updateInfo = {
+      desc: !!desc ? desc : product.desc,
+      price: !!price ? price : product.price,
+      imageUrl: !!imageUrl ? imageUrl : product.imageUrl
+    }
+
+    // update product in database
+    await Product.findByIdAndUpdate(id, updateInfo)
+
+    // find the updated product and populate
+    const updatedProduct = await Product.findById(id).populate({ path: "user" })
+
+    return updatedProduct
+
+  },
+
+  // todo: add to cart
   addToCart: async (parent, args, context, info) => {
 
     // id = productID

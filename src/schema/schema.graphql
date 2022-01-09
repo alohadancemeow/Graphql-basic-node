@@ -13,6 +13,7 @@ type Query {
 type Mutation {
   signup(name: String!, email: String!, password: String!): User
   createProduct(desc: String!, price: Float!, imageUrl: String!): Product!
+  updateProduct(id: ID!, desc: String, price: Float, imageUrl: String): Product!
   addToCart(id: ID!): CartItem!
 }
 
