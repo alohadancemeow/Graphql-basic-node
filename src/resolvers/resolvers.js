@@ -79,6 +79,11 @@ const Mutation = {
   // todo: sign up
   signup: async (parent, args, context, info) => {
 
+    // check if args are empty
+    if (!args.name || !args.email || !args.password) {
+      throw new Error('Please privide all required fields.')
+    }
+
     const email = args.email.trim().toLowerCase()
     const currentUsers = await User.find({})
     const isEmailExist = currentUsers.findIndex(user => user.email === email) > -1
