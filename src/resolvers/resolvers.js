@@ -69,7 +69,7 @@ const Query = {
     const allProducts = await Product.find().populate({
       path: "user",
       populate: { path: "products" }
-    })
+    }).sort({ createdAt: 'desc' })
     return allProducts
   }
 }
