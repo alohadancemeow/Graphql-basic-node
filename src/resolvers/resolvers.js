@@ -9,27 +9,6 @@ import jwt from 'jsonwebtoken'
 // # Need to be async, because it's promise.
 const Query = {
 
-  // todo: login
-  login: async (parent, args, context, info) => {
-    const { email, password } = args
-
-    // find user in database
-    const user = await User.findOne({ email })
-
-    if (!user) throw new Error('Email not found, please sign up.')
-
-    // check if password is correct
-    const validPassword = await bcrypt.compare(password, user.password)
-
-    if (!validPassword) throw new Error('Invalid email or password.')
-
-    // create token
-    const token = jwt.sign({ userId: user.id }, process.env.SECRET, { expiresIn: "7days" })
-
-    return { userId: user.id, jwt: token }
-
-  },
-
   // todo: user
   user: async (parent, args, { userId }, info) => {
 
@@ -99,6 +78,29 @@ const Mutation = {
 
     // create user and return hashed password
     return User.create({ ...args, email, password })
+  },
+
+  // todo: login
+  login: async (parent, args, context, info) => {
+    const { email, password } = args
+
+    // find user in database and poppulate products, carts
+    const user = await User.findOne({ email })
+      .populate({ path: 'products', populate: { path: 'user' } })
+      .populate({ path: "carts", populate: { path: "product" } })
+
+    if (!user) throw new Error('Email not found, please sign up.')
+
+    // check if password is correct
+    const validPassword = await bcrypt.compare(password, user.password)
+
+    if (!validPassword) throw new Error('Invalid email or password.')
+
+    // create token
+    const token = jwt.sign({ userId: user.id }, process.env.SECRET, { expiresIn: "7days" })
+
+    return { user, jwt: token }
+
   },
 
   // todo: create product
