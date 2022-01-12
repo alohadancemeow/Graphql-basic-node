@@ -15,11 +15,7 @@ const Query = {
     // check if user logged in
     if (!userId) throw new Error('Please log in.')
 
-    // compare userId from token with userId from args
-    if (userId !== args.id) throw new Error('Not authorized.')
-
-
-    const oneUser = await User.findById(args.id)
+    const oneUser = await User.findById(userId)
       .populate({ path: 'products', populate: { path: 'user' } })
       .populate({ path: "carts", populate: { path: "product" } })
     return oneUser

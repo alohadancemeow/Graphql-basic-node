@@ -2,7 +2,7 @@
 
 # Query (read)
 type Query {
-  user(id: ID!): User
+  user: User
   users: [User]!
   product(id: ID!): Product
   products: [Product]!
