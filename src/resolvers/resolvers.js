@@ -5,6 +5,7 @@ import CartItem from "../models/cartItem"
 import bcrypt from 'bcryptjs'
 import { GraphQLDateTime } from 'graphql-iso-date'
 import jwt from 'jsonwebtoken'
+import { randomBytes } from 'crypto'
 
 // # Need to be async, because it's promise.
 const Query = {
@@ -97,6 +98,31 @@ const Mutation = {
 
     return { user, jwt: token }
 
+  },
+
+  // todo: reset password
+  requestResetPassword: async (parent, { email }, context, info) => {
+
+    // find user in database by email
+    const user = await User.findOne({ email })
+
+    // if not found
+    if (!user) throw new Error('Email not found, please sign up instead.')
+
+    // create a resetPasswordToken and resetTokenExpiry
+    const resetPasswordToken = randomBytes(32).toString('hex')
+    const resetTokenExpiry = Date.now() + 30 * 60 * 10
+
+    // update user (save reset token, reset expiry)
+    await User.findByIdAndUpdate(user.id, {
+      resetPasswordToken,
+      resetTokenExpiry
+    })
+
+    // send link for set password to user email
+
+    // return message to frontend
+    return { message: 'Please check your email to proceed reset password.' }
   },
 
   // todo: create product

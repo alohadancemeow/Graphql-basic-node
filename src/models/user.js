@@ -19,6 +19,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  resetPasswordToken: {
+    type: String
+  },
+  resetTokenExpiry: {
+    type: Number
+  },
   products: [
     {
       type: mongoose.Schema.Types.ObjectId,
