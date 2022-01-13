@@ -7,6 +7,9 @@ import { GraphQLDateTime } from 'graphql-iso-date'
 import jwt from 'jsonwebtoken'
 import { randomBytes } from 'crypto'
 
+// note: verify email before use this.
+import sgMail from '@sendgrid/mail'
+
 // # Need to be async, because it's promise.
 const Query = {
 
@@ -103,6 +106,11 @@ const Mutation = {
   // todo: reset password
   requestResetPassword: async (parent, { email }, context, info) => {
 
+    // check if args are empty
+    if (!email) {
+      throw new Error('Please privide all required fields.')
+    }
+
     // find user in database by email
     const user = await User.findOne({ email })
 
@@ -120,6 +128,25 @@ const Mutation = {
     })
 
     // send link for set password to user email
+    sgMail.setApiKey(process.env.SEND_EMAIL_API_KEY)
+    const message = {
+      from: 'rabbit.bot@outlook.com',
+      to: user.email,
+      subject: 'Reset password link',
+      html: `
+        <div> 
+          <p>Please click the link below to proceed reset password.</p> \n\n
+          <a href="http://localhost:3000/signin/resetpassword?resetToken=${resetPasswordToken}" target='blank' style={{color: 'blue'}}>Click to reset your password</a>
+        </div>
+      `
+    }
+    sgMail.send(message)
+      .then(() => {
+        console.log('Message sent')
+      }).catch((error) => {
+        console.log(error.response.body)
+        // console.log(error.response.body.errors[0].message)
+      })
 
     // return message to frontend
     return { message: 'Please check your email to proceed reset password.' }
