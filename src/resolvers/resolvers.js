@@ -103,7 +103,7 @@ const Mutation = {
 
   },
 
-  // todo: reset password
+  // todo: request to reset password
   requestResetPassword: async (parent, { email }, context, info) => {
 
     // check if args are empty
@@ -119,9 +119,9 @@ const Mutation = {
 
     // create a resetPasswordToken and resetTokenExpiry
     const resetPasswordToken = randomBytes(32).toString('hex')
-    const resetTokenExpiry = Date.now() + 30 * 60 * 10
+    const resetTokenExpiry = Date.now() + 30 * 60 * 1000
 
-    // update user (save reset token, reset expiry)
+    // update user (add reset token, reset expiry)
     await User.findByIdAndUpdate(user.id, {
       resetPasswordToken,
       resetTokenExpiry
@@ -145,11 +145,39 @@ const Mutation = {
         console.log('Message sent')
       }).catch((error) => {
         console.log(error.response.body)
-        // console.log(error.response.body.errors[0].message)
       })
 
     // return message to frontend
     return { message: 'Please check your email to proceed reset password.' }
+  },
+
+  // todo: reset password
+  resetPassword: async (parent, { password, token }, context, info) => {
+
+    // find user in database by reset token
+    const user = await User.findOne({ resetPasswordToken: token })
+
+    // if not found
+    if (!user) throw new Error('Invalid token, cannot reset password.')
+
+    // check if token is expired
+    const isTokenExpired = user.resetTokenExpiry < Date.now()
+    if (isTokenExpired) throw new Error('Token is expired, cannot reset password.')
+
+    // validate and hash password
+    if (password.trim().length < 6) throw new Error('Password must be at least 6 charaters.')
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // update user in database, 
+    // save new hashed password,
+    // and delete reset token, token expiry.
+    await User.findByIdAndUpdate(user.id, {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetTokenExpiry: null
+    })
+
+    return { message: 'You have successfully reset your password, please sign in.' }
   },
 
   // todo: create product
