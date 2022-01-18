@@ -20,7 +20,7 @@ const Query = {
     if (!userId) throw new Error('Please log in.')
 
     const oneUser = await User.findById(userId)
-      .populate({ path: 'products', populate: { path: 'user' } })
+      .populate({ path: 'products', options: { sort: { createdAt: 'desc' } }, populate: { path: 'user' } })
       .populate({ path: "carts", populate: { path: "product" } })
     return oneUser
   },
