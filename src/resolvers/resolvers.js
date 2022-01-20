@@ -329,7 +329,7 @@ const Mutation = {
     }
 
     // delete cart
-    const deletedCart = await CartItem.findOneAndRemove(id)
+    const deletedCart = await CartItem.findByIdAndRemove(id)
 
     // update user's carts
     const updatedUserCarts = user.carts.filter(cartId => cartId.toString() !== deletedCart.id.toString())
