@@ -18,6 +18,7 @@ type Mutation {
   updateProduct(id: ID!, desc: String, price: Float, imageUrl: String): Product!
   addToCart(id: ID!): CartItem!
   deleteCart(id: ID!): CartItem!
+  createOrder(amount: Float!, token: String): Order
 }
 
 scalar Date
@@ -30,6 +31,8 @@ type User {
   password: String!
   products: [Product]
   carts: [CartItem]!
+  orders: [Order]!
+  cardIds: [String]!
   createdAt: Date!
 }
 
@@ -61,4 +64,20 @@ type AuthData {
 # A message for reset password
 type Message {
   message: String!
+}
+
+# Order
+type Order {
+  id: ID!
+  user: User!
+  items: [OrdersItem!]!
+  createdAt: Date!
+}
+
+type OrdersItem {
+  id: ID!
+  product: Product!
+  quantity: Int!
+  user: User!
+  createdAt: Date!
 }

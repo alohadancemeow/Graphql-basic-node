@@ -41,7 +41,25 @@ const userSchema = new mongoose.Schema({
     type: Date,
     required: true,
     default: () => Date.now()
-  }
+  },
+  orders: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order'
+    }
+  ],
+  cards: [
+    {
+      id: String,
+      cardInfo: {
+        id: String,
+        expiration_month: Number,
+        expiration_year: Number,
+        brand: String,
+        last_digits: String
+      }
+    }
+  ]
 })
 
 const User = mongoose.model("User", userSchema)

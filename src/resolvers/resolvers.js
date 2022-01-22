@@ -1,6 +1,8 @@
 import User from "../models/user"
 import Product from '../models/product'
 import CartItem from "../models/cartItem"
+import OrderItem from '../models/orderItem'
+import Order from '../models/order'
 
 import bcrypt from 'bcryptjs'
 import { GraphQLDateTime } from 'graphql-iso-date'
@@ -9,6 +11,9 @@ import { randomBytes } from 'crypto'
 
 // note: verify email before use this.
 import sgMail from '@sendgrid/mail'
+
+// omise utils
+import { retrieveCustomer, createCustomer, createCharge } from '../utils/omiseUtils'
 
 // # Need to be async, because it's promise.
 const Query = {
@@ -340,6 +345,105 @@ const Mutation = {
     })
 
     return deletedCart
+
+  },
+
+  // todo: create order
+  createOrder: async (parent, { amount, token }, { userId }, info) => {
+
+    // check if user logged in
+    if (!userId) throw new Error('Please log in.')
+
+    // Query user from database
+    const user = await User.findById(userId)
+      .populate({
+        path: 'carts',
+        populate: { path: 'product' }
+      })
+    // console.log(user);
+
+    // create charge with omise
+    // retrieve customer
+    let customer = await retrieveCustomer(user.cards[0] && user.cards[0].id)
+
+    // create new customer, if no customer
+    if (!customer) {
+      const newCustomer = await createCustomer(user.email, user.name, token)
+      customer = newCustomer
+      console.log('newCustomer', newCustomer);
+
+      // update user'cards field
+      const {
+        id,
+        expiration_month,
+        expiration_year,
+        brand,
+        last_digits
+      } = newCustomer.cards.data[0]
+
+      user.cards[0] = {
+        id: newCustomer.id,
+        cardInfo: {
+          id,
+          expiration_month,
+          expiration_year,
+          brand,
+          last_digits
+        }
+      }
+
+      // update user's cards
+      await User.findByIdAndUpdate(userId, {
+        cards: user.cards
+      })
+    }
+
+    // create charge
+    const charge = await createCharge(amount, customer.id)
+    // console.log('charge', charge);
+    if (!charge) throw new Error('Something went wrong with payment, please try again.')
+
+    // convert CartItem to OrderItem
+    const convertCartToOrder = async () => {
+      return Promise.all(
+        user.carts.map(cart => OrderItem.create({
+          product: cart.product,
+          quantity: cart.quantity,
+          user: cart.user
+        }))
+      )
+    }
+
+    // get order item array after converted
+    const orderItems = await convertCartToOrder()
+
+    // creaet order
+    const order = await Order.create({
+      user: userId,
+      items: orderItems.map(orderItem => orderItem.id)
+    })
+
+    // delete CartItem from carts
+    const deleteCartItem = async () => {
+      return Promise.all(
+        user.carts.map(cart => CartItem.findByIdAndRemove(cart.id))
+      )
+    }
+
+    await deleteCartItem()
+
+    // update user info
+    await User.findByIdAndUpdate(userId, {
+      carts: [],
+      orders: !user.orders
+        ? [order.id]
+        : [...user.orders, order.id]
+    })
+
+    // return Order and populate user, items
+    return Order.findById(order.id)
+      .populate({ path: 'user' })
+      .populate({ path: 'items', populate: { path: 'product' } })
 
   }
 }
