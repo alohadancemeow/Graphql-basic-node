@@ -32,7 +32,7 @@ type User {
   products: [Product]
   carts: [CartItem]!
   orders: [Order]!
-  cardIds: [String]!
+  cards: [Card]!
   createdAt: Date!
 }
 
@@ -80,4 +80,18 @@ type OrdersItem {
   quantity: Int!
   user: User!
   createdAt: Date!
+}
+
+# A card has id, card info
+type Card {
+  id: ID!
+  cardInfo: CardInfo
+}
+
+type CardInfo {
+  id: ID!
+  expiration_month: Int!
+  expiration_year: Int!
+  brand: String!
+  last_digits: String!
 }
