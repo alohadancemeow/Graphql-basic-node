@@ -13,7 +13,7 @@ import { randomBytes } from 'crypto'
 import sgMail from '@sendgrid/mail'
 
 // omise utils
-import { retrieveCustomer, createCustomer, createCharge } from '../utils/omiseUtils'
+import { retrieveCustomer, createCustomer, createCharge, createChargeInternetBanking } from '../utils/omiseUtils'
 
 // # Need to be async, because it's promise.
 const Query = {
@@ -359,7 +359,7 @@ const Mutation = {
   },
 
   // todo: create order
-  createOrder: async (parent, { amount, cardId, token }, { userId }, info) => {
+  createOrder: async (parent, { amount, cardId, token, return_uri }, { userId }, info) => {
 
     // check if user logged in
     if (!userId) throw new Error('Please log in.')
@@ -376,15 +376,16 @@ const Mutation = {
     // retrieve customer
     let customer
 
+    // todo: # Credit Card
     // check for cardId, if user use existing card
-    if (cardId && !token) {
+    if (amount && cardId && !token && !return_uri) {
       const cust = await retrieveCustomer(cardId)
       if (!cust) throw new Error('Cannot process payment.')
       customer = cust
     }
 
     // create new customer, if no customer or user use a new card
-    if (token && !cardId) {
+    if (amount && token && !cardId && !return_uri) {
       const newCustomer = await createCustomer(user.email, user.name, token)
       if (!newCustomer) throw new Error('Cannot process payment.')
       customer = newCustomer
@@ -412,12 +413,22 @@ const Mutation = {
 
       // update user's cards
       await User.findByIdAndUpdate(userId, {
-        cards: [newCard, ...user.cards] 
+        cards: [newCard, ...user.cards]
       })
     }
 
     // create charge
-    const charge = await createCharge(amount, customer.id)
+    let charge
+
+    if (token && return_uri) {
+      // Internet Backing
+      charge = await createChargeInternetBanking(amount, token, return_uri)
+
+    } else {
+      // Credit card
+      charge = await createCharge(amount, customer.id)
+    }
+
     // console.log('charge', charge);
     if (!charge) throw new Error('Something went wrong with payment, please try again.')
 
@@ -438,7 +449,8 @@ const Mutation = {
     // creaet order
     const order = await Order.create({
       user: userId,
-      items: orderItems.map(orderItem => orderItem.id)
+      items: orderItems.map(orderItem => orderItem.id),
+      authorize_uri: charge.authorize_uri
     })
 
     // delete CartItem from carts
