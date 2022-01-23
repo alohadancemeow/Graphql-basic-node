@@ -18,7 +18,7 @@ type Mutation {
   updateProduct(id: ID!, desc: String, price: Float, imageUrl: String): Product!
   addToCart(id: ID!): CartItem!
   deleteCart(id: ID!): CartItem!
-  createOrder(amount: Float!, token: String): Order
+  createOrder(amount: Float!, cardId: String, token: String): Order
 }
 
 scalar Date

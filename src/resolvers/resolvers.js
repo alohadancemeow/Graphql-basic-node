@@ -27,6 +27,11 @@ const Query = {
     const oneUser = await User.findById(userId)
       .populate({ path: 'products', options: { sort: { createdAt: 'desc' } }, populate: { path: 'user' } })
       .populate({ path: "carts", populate: { path: "product" } })
+      .populate({
+        path: 'orders',
+        options: { sort: { createdAt: 'desc' } },
+        populate: { path: 'items', populate: { path: 'product' } }
+      })
     return oneUser
   },
 
@@ -93,6 +98,11 @@ const Mutation = {
     const user = await User.findOne({ email })
       .populate({ path: 'products', populate: { path: 'user' } })
       .populate({ path: "carts", populate: { path: "product" } })
+      .populate({
+        path: 'orders',
+        options: { sort: { createdAt: 'desc' } },
+        populate: { path: 'items', populate: { path: 'product' } }
+      })
 
     if (!user) throw new Error('Email not found, please sign up.')
 
@@ -349,7 +359,7 @@ const Mutation = {
   },
 
   // todo: create order
-  createOrder: async (parent, { amount, token }, { userId }, info) => {
+  createOrder: async (parent, { amount, cardId, token }, { userId }, info) => {
 
     // check if user logged in
     if (!userId) throw new Error('Please log in.')
@@ -364,11 +374,19 @@ const Mutation = {
 
     // create charge with omise
     // retrieve customer
-    let customer = await retrieveCustomer(user.cards[0] && user.cards[0].id)
+    let customer
 
-    // create new customer, if no customer
-    if (!customer) {
+    // check for cardId, if user use existing card
+    if (cardId && !token) {
+      const cust = await retrieveCustomer(cardId)
+      if (!cust) throw new Error('Cannot process payment.')
+      customer = cust
+    }
+
+    // create new customer, if no customer or user use a new card
+    if (token && !cardId) {
       const newCustomer = await createCustomer(user.email, user.name, token)
+      if (!newCustomer) throw new Error('Cannot process payment.')
       customer = newCustomer
       console.log('newCustomer', newCustomer);
 
@@ -381,7 +399,7 @@ const Mutation = {
         last_digits
       } = newCustomer.cards.data[0]
 
-      user.cards[0] = {
+      const newCard = {
         id: newCustomer.id,
         cardInfo: {
           id,
@@ -394,7 +412,7 @@ const Mutation = {
 
       // update user's cards
       await User.findByIdAndUpdate(userId, {
-        cards: user.cards
+        cards: [newCard, ...user.cards] 
       })
     }
 
